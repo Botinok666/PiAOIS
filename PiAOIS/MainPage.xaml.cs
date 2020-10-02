@@ -41,42 +41,24 @@ namespace PiAOIS
         public MainPage()
         {
             InitializeComponent();
-            ChartTemperature.Series.Add(new LineSeries() { 
-                ItemsSource = new ChartCollection(), 
-                Title = new Title() { Content = "Улица\n°C" },
-                IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
-                DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
-                IsSelectionEnabled = true
-            });
-            ChartTemperature.Series.Add(new LineSeries() { 
-                ItemsSource = new ChartCollection(), 
-                Title = new Title() { Content = "Помещение\n°C" },
-                IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
-                DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
-                IsSelectionEnabled = true
-            });
-            ChartHumidity.Series.Add(new LineSeries()
+            InitCharts();
+        }
+        private void InitCharts()
+        { 
+            new List<Chart>()
             {
-                ItemsSource = new ChartCollection(),
-                Title = new Title() { Content = "Влажность\n%" },
-                IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
-                DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
-                IsSelectionEnabled = true
-            });
-            ChartLux.Series.Add(new LineSeries() { 
-                ItemsSource = new ChartCollection(), 
-                Title = new Title() { Content = "Освещённость\nлюкс" },
-                IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
-                DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
-                IsSelectionEnabled = true
-            });
-            ChartPressure.Series.Add(new LineSeries() { 
-                ItemsSource = new ChartCollection(), 
-                Title = new Title() { Content = "Давление\nмм" },
-                IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
-                DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
-                IsSelectionEnabled = true
-            });
+                ChartTemperature, ChartTemperature, ChartHumidity, ChartPressure, ChartLux
+            }
+            .Select((chart, idx) => new { chart, idx })
+            .ForEach(pair => pair.chart.Series.Add(new LineSeries()
+                {
+                    ItemsSource = new ChartCollection(),
+                    Title = new Title() { Content = Const.titles[pair.idx] },
+                    IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
+                    DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
+                    IsSelectionEnabled = true
+                })
+            );
             var tempOutside = (ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection;
             var tempInside = (ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection;
             var humidity = (ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection;
@@ -92,7 +74,6 @@ namespace PiAOIS
                 lighting.Add(new ChartPoint(dateTime, 50));
             }
         }
-
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
             if (toggleSw.IsOn)
