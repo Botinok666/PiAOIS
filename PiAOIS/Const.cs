@@ -16,7 +16,8 @@ namespace PiAOIS
         public const double temperatureHyst = 1;
         public const double humidityHyst = 5;
         public const double lightingHyst = 5; 
-        public static readonly string[] titles = 
-            { "Улица\n°C", "Помещение\n°C", "Влажность\n%", "Освещённость\nлюкс", "Давление\nмм" };
+        public static readonly string[] graphTitles = 
+            { "Улица\n°C", "Помещение\n°C", "Влажность\n%", "Давление\nмм", "Освещённость\nлюкс" };
+        public static readonly double[] defaultGraphValues = { 20, 25, 65, 760, 30 };
     }
 }

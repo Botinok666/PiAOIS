@@ -53,26 +53,31 @@ namespace PiAOIS
             .ForEach(pair => pair.chart.Series.Add(new LineSeries()
                 {
                     ItemsSource = new ChartCollection(),
-                    Title = new Title() { Content = Const.titles[pair.idx] },
+                    Title = new Title() { Content = Const.graphTitles[pair.idx] },
                     IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
                     DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
                     IsSelectionEnabled = true
                 })
             );
-            var tempOutside = (ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection;
-            var tempInside = (ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection;
-            var humidity = (ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection;
-            var airPressure = (ChartPressure.Series[0] as LineSeries).ItemsSource as ChartCollection;
-            var lighting = (ChartLux.Series[0] as LineSeries).ItemsSource as ChartCollection;
+            var chartSeries = GetChartSeries();
             for (int j = 0; j < Const.pointsCount; j++)
             {
                 DateTime dateTime = DateTime.Now.AddSeconds(j - Const.pointsCount);
-                tempOutside.Add(new ChartPoint(dateTime, 20));
-                tempInside.Add(new ChartPoint(dateTime, 25));
-                humidity.Add(new ChartPoint(dateTime, 50));
-                airPressure.Add(new ChartPoint(dateTime, 760));
-                lighting.Add(new ChartPoint(dateTime, 50));
+                chartSeries
+                    .Select((chart, idx) => new { chart, idx })
+                    .ForEach(pair => pair.chart.Add(
+                        new ChartPoint(dateTime, Const.defaultGraphValues[pair.idx])));
             }
+        }
+        private ChartCollection[] GetChartSeries()
+        {
+            return new ChartCollection[] {
+                (ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection,
+                (ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection,
+                (ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection,
+                (ChartPressure.Series[0] as LineSeries).ItemsSource as ChartCollection,
+                (ChartLux.Series[0] as LineSeries).ItemsSource as ChartCollection
+            };
         }
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -90,20 +95,16 @@ namespace PiAOIS
                         return;
                     }
                     randomData = new RandomData(jsonFolder);
-                    randomData.AddSensor(GraphKeys.tempExt.ToString(), -20, 50, 20);
-                    randomData.AddSensor(GraphKeys.tempInt.ToString(), 10, 40, 25);
-                    randomData.AddSensor(GraphKeys.humidity.ToString(), 0, 100, 65);
-                    randomData.AddSensor(GraphKeys.pressure.ToString(), 730, 790, 760);
-                    randomData.AddSensor(GraphKeys.lighting.ToString(), 0, 100, 30);
+                    randomData.AddSensor(GraphKeys.tempExt.ToString(), -20, 50, Const.defaultGraphValues[0]);
+                    randomData.AddSensor(GraphKeys.tempInt.ToString(), 10, 40, Const.defaultGraphValues[1]);
+                    randomData.AddSensor(GraphKeys.humidity.ToString(), 0, 100, Const.defaultGraphValues[2]);
+                    randomData.AddSensor(GraphKeys.pressure.ToString(), 730, 790, Const.defaultGraphValues[3]);
+                    randomData.AddSensor(GraphKeys.lighting.ToString(), 0, 100, Const.defaultGraphValues[4]);
 
                     data = Data.Data.GetInstance();
-                    data.Points = new List<ChartPoint>[5] {
-                        ((ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection).ToList(),
-                        ((ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection).ToList(),
-                        ((ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection).ToList(),
-                        ((ChartPressure.Series[0] as LineSeries).ItemsSource as ChartCollection).ToList(),
-                        ((ChartLux.Series[0] as LineSeries).ItemsSource as ChartCollection).ToList()
-                    };
+                    data.Points = GetChartSeries()
+                        .Select(x => x.ToList())
+                        .ToArray();
                     data.DataAdded += Data_DataAdded;
 
                     var queryResult = jsonFolder.CreateFileQueryWithOptions(
@@ -138,16 +139,10 @@ namespace PiAOIS
         {
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
             {
-                var pointsObserve = new ChartCollection[] {
-                    (ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                    (ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection,
-                    (ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                    (ChartPressure.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                    (ChartLux.Series[0] as LineSeries).ItemsSource as ChartCollection
-                };
-                pointsObserve.ForEach(x => x.Clear());
-                for (int j = 0; j < pointsObserve.Length; j++)
-                    data.Points[j].ForEach(x => pointsObserve[j].Add(x));
+                var chartSeries = GetChartSeries();
+                chartSeries.ForEach(x => x.Clear());
+                for (int j = 0; j < chartSeries.Length; j++)
+                    data.Points[j].ForEach(x => chartSeries[j].Add(x));
                 //Handle devices
                 devices.ManageDevices();
                 SwKitchen.IsOn = devices.KitchenVentIsOn;
