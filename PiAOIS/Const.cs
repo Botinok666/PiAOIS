@@ -12,7 +12,7 @@ namespace PiAOIS
     {
         public const int pointsCount = 16;
         public const int repeatRate = 2000; //In ms
-        public const double changeRate = .06;
+        public const double changeRate = .04;
         public const double temperatureHyst = 1;
         public const double humidityHyst = 5;
         public const double lightingHyst = 5; 

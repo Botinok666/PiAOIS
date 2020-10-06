@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Windows.Data.Json;
 using Windows.Foundation;
 using Windows.Storage;
+using MathNet.Numerics.Distributions;
 
 namespace PiAOIS.Util
 {
@@ -61,16 +62,26 @@ namespace PiAOIS.Util
         private async void Worker(object obj)
         {
             Random random = MTRandom.Create();
+            var distributions = new List<IContinuousDistribution>() 
+            {   
+                Normal.WithMeanVariance(0, 1.5, random), 
+                new Cauchy(0.0, 2.0, random),
+                new Exponential(1.5, random),
+                new Gamma(5.0, 1.0, random), 
+                new Laplace(0, 2.0, random)
+            };
+            var means = new double[] { 0, 0, 1 / 1.5, 5, 0 };
             CancellationToken cancellationToken = (CancellationToken)obj;
             while (!cancellationToken.IsCancellationRequested)
             {
                 lock (lockObj)
                 {
-                    sensors.ForEach(x => 
+                    for (int j = 0; j < sensors.Count; j++)
                     {
-                        x.Value += (x.UpperLimit - x.LowerLimit) * Const.changeRate * (random.NextDouble() - .5);
+                        var x = sensors[j];
+                        x.Value += (x.UpperLimit - x.LowerLimit) * Const.changeRate * (distributions[j].Sample() - means[j]);
                         x.Value = Math.Min(x.UpperLimit, Math.Max(x.LowerLimit, x.Value));
-                    });
+                    }
                 }
                 JsonObject jsonValues = new JsonObject();
                 sensors.ForEach(x => jsonValues[x.Name] = JsonValue.CreateNumberValue(Math.Round(x.Value, 2)));

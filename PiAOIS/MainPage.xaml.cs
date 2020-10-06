@@ -99,7 +99,7 @@ namespace PiAOIS
                     randomData.AddSensor(GraphKeys.tempInt.ToString(), 10, 40, Const.defaultGraphValues[1]);
                     randomData.AddSensor(GraphKeys.humidity.ToString(), 0, 100, Const.defaultGraphValues[2]);
                     randomData.AddSensor(GraphKeys.pressure.ToString(), 730, 790, Const.defaultGraphValues[3]);
-                    randomData.AddSensor(GraphKeys.lighting.ToString(), 0, 100, Const.defaultGraphValues[4]);
+                    randomData.AddSensor(GraphKeys.lighting.ToString(), 0, 200, Const.defaultGraphValues[4]);
 
                     data = Data.Data.GetInstance();
                     data.Points = GetChartSeries()
