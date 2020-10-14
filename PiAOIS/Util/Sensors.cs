@@ -8,8 +8,6 @@ using System.Threading.Tasks;
 using Windows.Data.Json;
 using Windows.Storage;
 using Windows.Storage.Search;
-using Windows.UI.Xaml.Media.Animation;
-using WinRTXamlToolkit.Tools;
 
 namespace PiAOIS.Util
 {
@@ -74,6 +72,15 @@ namespace PiAOIS.Util
                     string key = ((GraphKeys)k).ToString();
                     if (jsonObj[key]?.ValueType == JsonValueType.Number)
                         pointsToAdd[k].Add(new ChartPoint(fileCreated, jsonObj[key].GetNumber()));
+                }
+                //Check rain condition
+                if (jsonObj[GraphKeys.rain.ToString()]?.ValueType == JsonValueType.Number)
+                {
+                    var rain = jsonObj[GraphKeys.rain.ToString()].GetNumber();
+                    if (rain > Const.rainThreshold)
+                        data.IsRaining = true;
+                    else if (rain + Const.rainHyst < Const.rainThreshold)
+                        data.IsRaining = false;
                 }
             }
             List<ChartPoint>[] points = data

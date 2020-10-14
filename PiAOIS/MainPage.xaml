@@ -48,13 +48,13 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0">
             <muxc:TabView IsAddTabButtonVisible="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                <muxc:TabViewItem Header="Температура">
+                <muxc:TabViewItem Header="Температура" IsClosable="False">
                     <Charting:Chart x:Name="ChartTemperature"/>
                 </muxc:TabViewItem>
-                <muxc:TabViewItem Header="Влажность">
+                <muxc:TabViewItem Header="Влажность" IsClosable="False">
                     <Charting:Chart x:Name="ChartHumidity"/>
                 </muxc:TabViewItem>
-                <muxc:TabViewItem Header="Ветер">
+                <muxc:TabViewItem Header="Ветер" IsClosable="False">
                     <Charting:Chart x:Name="ChartWind"/>
                 </muxc:TabViewItem>
             </muxc:TabView>
@@ -75,24 +75,24 @@
                 <StackPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Temp" HorizontalAlignment="Center"/>
                     <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run Text="{x:Bind OutsideTemp}"/><Run FontSize="20" Text="°C"/>
+                        <Run x:Name="OutsideTemp"/><Run FontSize="20" Text="°C"/>
                     </TextBlock>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Humidity" HorizontalAlignment="Center"/>
                     <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run Text="{x:Bind OutsideHumidity}"/><Run FontSize="20" Text="%"/>
+                        <Run x:Name="OutsideHumidity"/><Run FontSize="20" Text="%"/>
                     </TextBlock>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Wind" HorizontalAlignment="Center"/>
                     <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run Text="{x:Bind WindSpeed}"/><Run FontSize="20" Text=" km/h" xml:space="preserve"/>
+                        <Run x:Name="WindSpeed"/><Run FontSize="20" Text=" km/h" xml:space="preserve"/>
                     </TextBlock>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Weather" HorizontalAlignment="Center"/>
-                    <Image x:Name="WeatherImg" Source="Assets/rain.png" Width="64"/>
+                    <Image x:Name="WeatherImg" Source="Assets/sun.png" Width="64"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -111,19 +111,22 @@
                 <StackPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Temp" HorizontalAlignment="Center"/>
                     <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run Text="{x:Bind InsideTemp}"/><Run FontSize="20" Text="°C"/>
+                        <Run x:Name="InsideTemp"/><Run FontSize="20" Text="°C"/>
                     </TextBlock>
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Humidity" HorizontalAlignment="Center"/>
                     <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run Text="{x:Bind InsideHumidity}"/><Run FontSize="20" Text="%"/>
+                        <Run x:Name="InsideHumidity"/><Run FontSize="20" Text="%"/>
                     </TextBlock>
                 </StackPanel>
             </Grid>
         </Border>
         <Border Grid.Row="2" Grid.Column="0">
-            <TextBlock x:Name="DebugText">Hello world!</TextBlock>
+            <ScrollViewer x:Name="DebugScroll" VerticalScrollMode="Auto" 
+                          VerticalScrollBarVisibility="Visible" HorizontalScrollMode="Disabled">
+                <TextBlock x:Name="DebugText"/>
+            </ScrollViewer>
         </Border>
         <Grid Grid.Row="2" Grid.Column="1">
             <Grid.ColumnDefinitions>

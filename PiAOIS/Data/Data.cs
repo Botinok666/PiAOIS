@@ -13,7 +13,9 @@ namespace PiAOIS.Data
     {
         private static Data instance = null;
         private List<ChartPoint>[] _points = null;
+        private bool _isRaining = false;
         public event EventHandler DataAdded;
+        public event EventHandler RainChanged;
         private Data() {}
         public static Data GetInstance()
         {
@@ -45,19 +47,27 @@ namespace PiAOIS.Data
         /// <summary>
         /// Threshold in Celsius degrees
         /// </summary>
-        public double KitchenThreshold { get; set; }
-        /// <summary>
-        /// Threshold in percents of relative humidity
-        /// </summary>
-        public double ShowerThreshold { get; set; }
-        /// <summary>
-        /// Threshold in lux
-        /// </summary>
-        public double LightingThreshold { get; set; }
+        public double TempThreshold { get; set; }
+        public bool HeaterIsOn { get; set; }
+        public bool WindIsHigh { get; set; }
+        public bool IsRaining 
+        { 
+            get => _isRaining; 
+            set
+            {
+                if (_isRaining != value)
+                    OnRainChanged(new EventArgs());
+                _isRaining = value;
+            }
+        }
         protected virtual void OnDataAdded(EventArgs e)
         {
             EventHandler handler = DataAdded;
             handler?.Invoke(this, e);
+        }
+        protected virtual void OnRainChanged(EventArgs e)
+        {
+            RainChanged?.Invoke(this, e);
         }
     }
 }

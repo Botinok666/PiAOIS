@@ -68,9 +68,10 @@ namespace PiAOIS.Util
                 new Cauchy(0.0, 2.0, random),
                 new Exponential(1.5, random),
                 new Gamma(5.0, 1.0, random), 
-                new Laplace(0, 2.0, random)
+                new Laplace(0, 2.0, random),
+                new Cauchy(0.0, 1.5, random)
             };
-            var means = new double[] { 0, 0, 1 / 1.5, 5, 0 };
+            var means = new double[] { 0, 0, 1 / 1.5, 5, 0, 0 };
             CancellationToken cancellationToken = (CancellationToken)obj;
             while (!cancellationToken.IsCancellationRequested)
             {

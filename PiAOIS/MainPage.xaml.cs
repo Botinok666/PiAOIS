@@ -20,6 +20,11 @@ using WinRTXamlToolkit.Tools;
 using WinRTXamlToolkit.Controls.DataVisualization.Charting;
 using System.Collections.ObjectModel;
 using Windows.Storage.Search;
+using System.Threading;
+using Windows.UI.Xaml.Media.Imaging;
+using Windows.UI;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -35,15 +40,8 @@ namespace PiAOIS
         StorageFolder jsonFolder = null;
         Data.Data data = null;
         Sensors sensors = null;
-        Devices devices = null;
         RandomData randomData = null;
-        bool isRunning = false;
-        public double InsideTemp { get; set; } = 26.5;
-        public double OutsideTemp { get; set; } = 26.5;
-        public double InsideHumidity { get; set; } = 60;
-        public double OutsideHumidity { get; set; } = 60;
-        public double WindSpeed { get; set; } = 5;
-
+        private int _isRunning = 0;
         public MainPage()
         {
             InitializeComponent();
@@ -53,13 +51,13 @@ namespace PiAOIS
         { 
             new List<Chart>()
             {
-                ChartTemperature, ChartTemperature, ChartHumidity//, ChartPressure, ChartLux
+                ChartTemperature, ChartTemperature, ChartHumidity, ChartHumidity, ChartWind
             }
             .Select((chart, idx) => new { chart, idx })
             .ForEach(pair => pair.chart.Series.Add(new LineSeries()
                 {
                     ItemsSource = new ChartCollection(),
-                    Title = new Title() { Content = Const.graphTitles[pair.idx] },
+                    Title = new Title() { Content = Const.GetGraphs[pair.idx].Title },
                     IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
                     DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
                     IsSelectionEnabled = true
@@ -72,7 +70,7 @@ namespace PiAOIS
                 chartSeries
                     .Select((chart, idx) => new { chart, idx })
                     .ForEach(pair => pair.chart.Add(
-                        new ChartPoint(dateTime, Const.defaultGraphValues[pair.idx])));
+                        new ChartPoint(dateTime, Const.GetGraphs[pair.idx].DefaultValue)));
             }
         }
         private ChartCollection[] GetChartSeries()
@@ -81,14 +79,15 @@ namespace PiAOIS
                 (ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection,
                 (ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection,
                 (ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                //(ChartPressure.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                //(ChartLux.Series[0] as LineSeries).ItemsSource as ChartCollection
+                (ChartHumidity.Series[1] as LineSeries).ItemsSource as ChartCollection,
+                (ChartWind.Series[0] as LineSeries).ItemsSource as ChartCollection
             };
         }
-        private async void Button_Click(object sender, RoutedEventArgs e)
+        private async void TurnOnBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (!isRunning)
+            if (_isRunning == 0)
             {
+                Interlocked.Exchange(ref _isRunning, 1);
                 if (jsonFolder is null)
                 {
                     await new Windows.UI.Popups.MessageDialog("Выберите папку для сохранения JSON файлов").ShowAsync();
@@ -97,21 +96,22 @@ namespace PiAOIS
                     jsonFolder = await folderPicker.PickSingleFolderAsync();
                     if (jsonFolder is null)
                     {
-                        isRunning = false;
+                        Interlocked.Exchange(ref _isRunning, 0);
                         return;
                     }
                     randomData = new RandomData(jsonFolder);
-                    randomData.AddSensor(GraphKeys.tempExt.ToString(), -20, 50, Const.defaultGraphValues[0]);
-                    randomData.AddSensor(GraphKeys.tempInt.ToString(), 10, 40, Const.defaultGraphValues[1]);
-                    randomData.AddSensor(GraphKeys.humidity.ToString(), 0, 100, Const.defaultGraphValues[2]);
-                    randomData.AddSensor(GraphKeys.pressure.ToString(), 730, 790, Const.defaultGraphValues[3]);
-                    randomData.AddSensor(GraphKeys.lighting.ToString(), 0, 200, Const.defaultGraphValues[4]);
+                    var names = Enum.GetValues(typeof(GraphKeys)).OfType<GraphKeys>();
+                    for (int j = 0; j < names.Count(); j++)
+                        randomData.AddSensor(names.ElementAt(j).ToString(), Const.GetGraphs[j].LowerBound,
+                            Const.GetGraphs[j].UpperBound, Const.GetGraphs[j].DefaultValue);
 
                     data = Data.Data.GetInstance();
                     data.Points = GetChartSeries()
                         .Select(x => x.ToList())
                         .ToArray();
                     data.DataAdded += Data_DataAdded;
+                    data.RainChanged += Data_RainChanged;
+                    data.TempThreshold = double.NaN;
 
                     var queryResult = jsonFolder.CreateFileQueryWithOptions(
                         new QueryOptions(CommonFileQuery.DefaultQuery, new List<string>() { ".json" }));
@@ -126,14 +126,34 @@ namespace PiAOIS
                         catch (FileNotFoundException) { }
                     });
                     sensors = new Sensors(queryResult);
-                    devices = new Devices();
                 }
                 randomData.Start();
+                DebugText.Text += Environment.NewLine + Const.systemOn;
+                TurnOnBtn.Foreground = new SolidColorBrush(Colors.PaleGreen);
             }
             else
             {
                 randomData?.Stop();
+                DebugText.Text += Environment.NewLine + Const.systemOff;
+                TurnOnBtn.Foreground = new SolidColorBrush(Colors.Black);
             }
+            DebugScroll.ChangeView(0, DebugScroll.ScrollableHeight, 1);
+        }
+
+        private async void Data_RainChanged(object sender, EventArgs e)
+        {
+            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
+            {
+                if (data.IsRaining)
+                {
+                    WeatherImg.Source = new BitmapImage(new Uri(WeatherImg.BaseUri, "Assets/rain.png"));
+                    DebugText.Text += Environment.NewLine + Const.rainyDay;
+                }
+                else
+                {
+                    WeatherImg.Source = new BitmapImage(new Uri(WeatherImg.BaseUri, "Assets/sun.png"));
+                }
+            });
         }
 
         private void QueryResult_ContentsChanged(IStorageQueryResultBase sender, object args)
@@ -149,22 +169,84 @@ namespace PiAOIS
                 chartSeries.ForEach(x => x.Clear());
                 for (int j = 0; j < chartSeries.Length; j++)
                     data.Points[j].ForEach(x => chartSeries[j].Add(x));
-                //Handle devices
-                devices.ManageDevices();
-                //SwKitchen.IsOn = devices.KitchenVentIsOn;
-                //SwShower.IsOn = devices.ShowerVentIsOn;
-                //SwLight.IsOn = devices.OutsideLightIsOn;
+                SetFrontEndValues();
+                HandleTriggers();
+                if (DebugText.Text.Count(c => c.Equals('\n')) > 30)
+                    DebugText.Text = DebugText.Text.Substring(DebugText.Text.LastIndexOf('\n'));
+                DebugScroll.ChangeView(0, DebugScroll.ScrollableHeight, 1);
             });
         }
 
+        private void SetFrontEndValues()
+        {
+            InsideTemp.Text = (data.Points[(int)GraphKeys.tempInt]
+                .LastOrDefault()
+                ?.Item2
+                ?? Const.GetGraphs[(int)GraphKeys.tempInt].DefaultValue).ToString("F1");
+            OutsideTemp.Text = (data.Points[(int)GraphKeys.tempExt]
+                .LastOrDefault()
+                ?.Item2
+                ?? Const.GetGraphs[(int)GraphKeys.tempExt].DefaultValue).ToString("F1");
+            InsideHumidity.Text = (data.Points[(int)GraphKeys.humidInt]
+                .LastOrDefault()
+                ?.Item2
+                ?? Const.GetGraphs[(int)GraphKeys.humidInt].DefaultValue).ToString("F0");
+            OutsideHumidity.Text = (data.Points[(int)GraphKeys.humidExt]
+                .LastOrDefault()
+                ?.Item2
+                ?? Const.GetGraphs[(int)GraphKeys.humidExt].DefaultValue).ToString("F0");
+            WindSpeed.Text = (data.Points[(int)GraphKeys.wind]
+                .LastOrDefault()
+                ?.Item2
+                ?? Const.GetGraphs[(int)GraphKeys.wind].DefaultValue).ToString("F1");
+        }
+        private void HandleTriggers()
+        {
+            //Temperature: heater
+            if (!double.IsNaN(data.TempThreshold))
+            {
+                var insideTemp = double.Parse(InsideTemp.Text);
+                if (insideTemp < data.TempThreshold)
+                {
+                    if (!data.HeaterIsOn)
+                    {
+                        data.HeaterIsOn = true;
+                        DebugText.Text += Environment.NewLine + Const.heatingOn;
+                    }
+                }
+                else if (insideTemp + Const.temperatureHyst > data.TempThreshold)
+                {
+                    if (data.HeaterIsOn)
+                    {
+                        data.HeaterIsOn = false;
+                        DebugText.Text += Environment.NewLine + Const.heatingOff;
+                    }
+                }
+            }
+            //Wind
+            var wind = double.Parse(WindSpeed.Text);
+            if (wind > Const.windThreshold)
+            {
+                if (!data.WindIsHigh)
+                {
+                    data.WindIsHigh = true;
+                    DebugText.Text += Environment.NewLine + Const.highWind;
+                }
+            }
+            else if (wind + Const.windSpeedHyst < Const.windThreshold)
+            {
+                if (data.WindIsHigh)
+                    data.WindIsHigh = false;
+            }
+        }
         private void ApplyBtn_Click(object sender, RoutedEventArgs e)
         {
-
-        }
-
-        private void TurnOnBtn_Click(object sender, RoutedEventArgs e)
-        {
-
+            var x = TempUserInput.Value;
+            var min = Const.GetGraphs[(int)GraphKeys.tempInt].LowerBound;
+            var max = Const.GetGraphs[(int)GraphKeys.tempInt].UpperBound;
+            data.TempThreshold = Math.Min(max, Math.Max(x, min));
+            TempUserInput.PlaceholderText = $"{(int)data.TempThreshold}°C";
+            TempUserInput.Text = "";
         }
     }
 }
