@@ -37,6 +37,12 @@ namespace PiAOIS
         Sensors sensors = null;
         Devices devices = null;
         RandomData randomData = null;
+        bool isRunning = false;
+        public double InsideTemp { get; set; } = 26.5;
+        public double OutsideTemp { get; set; } = 26.5;
+        public double InsideHumidity { get; set; } = 60;
+        public double OutsideHumidity { get; set; } = 60;
+        public double WindSpeed { get; set; } = 5;
 
         public MainPage()
         {
@@ -47,7 +53,7 @@ namespace PiAOIS
         { 
             new List<Chart>()
             {
-                ChartTemperature, ChartTemperature, ChartHumidity, ChartPressure, ChartLux
+                ChartTemperature, ChartTemperature, ChartHumidity//, ChartPressure, ChartLux
             }
             .Select((chart, idx) => new { chart, idx })
             .ForEach(pair => pair.chart.Series.Add(new LineSeries()
@@ -75,13 +81,13 @@ namespace PiAOIS
                 (ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection,
                 (ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection,
                 (ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                (ChartPressure.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                (ChartLux.Series[0] as LineSeries).ItemsSource as ChartCollection
+                //(ChartPressure.Series[0] as LineSeries).ItemsSource as ChartCollection,
+                //(ChartLux.Series[0] as LineSeries).ItemsSource as ChartCollection
             };
         }
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (toggleSw.IsOn)
+            if (!isRunning)
             {
                 if (jsonFolder is null)
                 {
@@ -91,7 +97,7 @@ namespace PiAOIS
                     jsonFolder = await folderPicker.PickSingleFolderAsync();
                     if (jsonFolder is null)
                     {
-                        toggleSw.IsOn = false;
+                        isRunning = false;
                         return;
                     }
                     randomData = new RandomData(jsonFolder);
@@ -145,25 +151,20 @@ namespace PiAOIS
                     data.Points[j].ForEach(x => chartSeries[j].Add(x));
                 //Handle devices
                 devices.ManageDevices();
-                SwKitchen.IsOn = devices.KitchenVentIsOn;
-                SwShower.IsOn = devices.ShowerVentIsOn;
-                SwLight.IsOn = devices.OutsideLightIsOn;
+                //SwKitchen.IsOn = devices.KitchenVentIsOn;
+                //SwShower.IsOn = devices.ShowerVentIsOn;
+                //SwLight.IsOn = devices.OutsideLightIsOn;
             });
         }
 
-        private void KitchenUD_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void ApplyBtn_Click(object sender, RoutedEventArgs e)
         {
-            Data.Data.GetInstance().KitchenThreshold = e.NewValue;
+
         }
 
-        private void ShowerUD_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        private void TurnOnBtn_Click(object sender, RoutedEventArgs e)
         {
-            Data.Data.GetInstance().ShowerThreshold = e.NewValue;
-        }
 
-        private void LightingUD_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-        {
-            Data.Data.GetInstance().LightingThreshold = e.NewValue;
         }
     }
 }
