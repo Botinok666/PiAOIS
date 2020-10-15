@@ -42,6 +42,7 @@ namespace PiAOIS
         Sensors sensors = null;
         RandomData randomData = null;
         private int _isRunning = 0;
+        private bool _isRaining = false;
         public MainPage()
         {
             InitializeComponent();
@@ -63,25 +64,24 @@ namespace PiAOIS
                     IsSelectionEnabled = true
                 })
             );
-            var chartSeries = GetChartSeries();
-            for (int j = 0; j < Const.pointsCount; j++)
-            {
-                DateTime dateTime = DateTime.Now.AddSeconds(j - Const.pointsCount);
-                chartSeries
-                    .Select((chart, idx) => new { chart, idx })
-                    .ForEach(pair => pair.chart.Add(
-                        new ChartPoint(dateTime, Const.GetGraphs[pair.idx].DefaultValue)));
-            }
         }
-        private ChartCollection[] GetChartSeries()
+        private void SetChartSeries(ChartCollection[] collection)
         {
-            return new ChartCollection[] {
-                (ChartTemperature.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                (ChartTemperature.Series[1] as LineSeries).ItemsSource as ChartCollection,
-                (ChartHumidity.Series[0] as LineSeries).ItemsSource as ChartCollection,
-                (ChartHumidity.Series[1] as LineSeries).ItemsSource as ChartCollection,
-                (ChartWind.Series[0] as LineSeries).ItemsSource as ChartCollection
-            };
+            //Just some old-school hard-coded indexes
+            switch (TabCharts.SelectedIndex)
+            {
+                case 0:
+                    (ChartTemperature.Series[0] as LineSeries).ItemsSource = collection[0];
+                    (ChartTemperature.Series[1] as LineSeries).ItemsSource = collection[1];
+                    break;
+                case 1:
+                    (ChartHumidity.Series[0] as LineSeries).ItemsSource = collection[2];
+                    (ChartHumidity.Series[1] as LineSeries).ItemsSource = collection[3];
+                    break;
+                case 2:
+                    (ChartWind.Series[0] as LineSeries).ItemsSource = collection[4];
+                    break;
+            }
         }
         private async void TurnOnBtn_Click(object sender, RoutedEventArgs e)
         {
@@ -105,13 +105,22 @@ namespace PiAOIS
                         randomData.AddSensor(names.ElementAt(j).ToString(), Const.GetGraphs[j].LowerBound,
                             Const.GetGraphs[j].UpperBound, Const.GetGraphs[j].DefaultValue);
 
+                    //Initial filling of each chart with 16 points
+                    var pts = new List<ChartPoint>[names.Count() - 1];
+                    for (int j = 0; j < pts.Length; j++)
+                        pts[j] = new List<ChartPoint>();
+                    for (int j = 0; j < Const.pointsCount; j++)
+                    {
+                        DateTime dateTime = DateTime.Now.AddSeconds(j - Const.pointsCount);
+                        pts
+                            .Select((chart, idx) => new { chart, idx })
+                            .ForEach(pair => pair.chart.Add(
+                                new ChartPoint(dateTime, Const.GetGraphs[pair.idx].DefaultValue)));
+                    }
                     data = Data.Data.GetInstance();
-                    data.Points = GetChartSeries()
-                        .Select(x => x.ToList())
-                        .ToArray();
+                    data.Points = pts;
                     data.DataAdded += Data_DataAdded;
-                    data.RainChanged += Data_RainChanged;
-                    data.TempThreshold = double.NaN;
+                    data.TempThreshold = double.NaN; //This means that user didn't set up it yet
 
                     var queryResult = jsonFolder.CreateFileQueryWithOptions(
                         new QueryOptions(CommonFileQuery.DefaultQuery, new List<string>() { ".json" }));
@@ -140,22 +149,6 @@ namespace PiAOIS
             DebugScroll.ChangeView(0, DebugScroll.ScrollableHeight, 1);
         }
 
-        private async void Data_RainChanged(object sender, EventArgs e)
-        {
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
-            {
-                if (data.IsRaining)
-                {
-                    WeatherImg.Source = new BitmapImage(new Uri(WeatherImg.BaseUri, "Assets/rain.png"));
-                    DebugText.Text += Environment.NewLine + Const.rainyDay;
-                }
-                else
-                {
-                    WeatherImg.Source = new BitmapImage(new Uri(WeatherImg.BaseUri, "Assets/sun.png"));
-                }
-            });
-        }
-
         private void QueryResult_ContentsChanged(IStorageQueryResultBase sender, object args)
         {
             sensors?.PollSensors();
@@ -165,12 +158,13 @@ namespace PiAOIS
         {
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Low, () =>
             {
-                var chartSeries = GetChartSeries();
-                chartSeries.ForEach(x => x.Clear());
+                var chartSeries = new ChartCollection[data.Points.Length];
                 for (int j = 0; j < chartSeries.Length; j++)
-                    data.Points[j].ForEach(x => chartSeries[j].Add(x));
+                    chartSeries[j] = new ChartCollection(data.Points[j]);
+                SetChartSeries(chartSeries);
                 SetFrontEndValues();
                 HandleTriggers();
+                //Trim debug text if it's too long
                 if (DebugText.Text.Count(c => c.Equals('\n')) > 30)
                     DebugText.Text = DebugText.Text.Substring(DebugText.Text.LastIndexOf('\n'));
                 DebugScroll.ChangeView(0, DebugScroll.ScrollableHeight, 1);
@@ -237,6 +231,22 @@ namespace PiAOIS
             {
                 if (data.WindIsHigh)
                     data.WindIsHigh = false;
+            }
+            //Rain
+            if (_isRaining != data.IsRaining)
+            {
+                BitmapImage bitmap = new BitmapImage();
+                if (data.IsRaining)
+                {
+                    bitmap.UriSource = new Uri(WeatherImg.BaseUri, "Assets/rain.png");
+                    DebugText.Text += Environment.NewLine + Const.rainyDay;
+                }
+                else
+                {
+                    bitmap.UriSource = new Uri(WeatherImg.BaseUri, "Assets/sun.png");
+                }
+                WeatherImg.Source = bitmap;
+                _isRaining = data.IsRaining;
             }
         }
         private void ApplyBtn_Click(object sender, RoutedEventArgs e)

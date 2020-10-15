@@ -47,17 +47,17 @@
             <RowDefinition Height="3*"/>
         </Grid.RowDefinitions>
         <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0">
-            <muxc:TabView IsAddTabButtonVisible="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                <muxc:TabViewItem Header="Температура" IsClosable="False">
+            <Pivot x:Name="TabCharts" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <PivotItem Header="Температура">
                     <Charting:Chart x:Name="ChartTemperature"/>
-                </muxc:TabViewItem>
-                <muxc:TabViewItem Header="Влажность" IsClosable="False">
+                </PivotItem>
+                <PivotItem Header="Влажность">
                     <Charting:Chart x:Name="ChartHumidity"/>
-                </muxc:TabViewItem>
-                <muxc:TabViewItem Header="Ветер" IsClosable="False">
+                </PivotItem>
+                <PivotItem Header="Ветер">
                     <Charting:Chart x:Name="ChartWind"/>
-                </muxc:TabViewItem>
-            </muxc:TabView>
+                </PivotItem>
+            </Pivot>
         </Border>
         <Border Grid.Row="0" Grid.Column="1">
             <Grid>
@@ -87,12 +87,12 @@
                 <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Wind" HorizontalAlignment="Center"/>
                     <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run x:Name="WindSpeed"/><Run FontSize="20" Text=" km/h" xml:space="preserve"/>
+                        <Run x:Name="WindSpeed"/><Run FontSize="20" Text=" km/h"/>
                     </TextBlock>
                 </StackPanel>
                 <StackPanel Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Weather" HorizontalAlignment="Center"/>
-                    <Image x:Name="WeatherImg" Source="Assets/sun.png" Width="64"/>
+                    <Image x:Name="WeatherImg" Source="Assets/sun.png" Height="64"/>
                 </StackPanel>
             </Grid>
         </Border>

@@ -13,9 +13,7 @@ namespace PiAOIS.Data
     {
         private static Data instance = null;
         private List<ChartPoint>[] _points = null;
-        private bool _isRaining = false;
         public event EventHandler DataAdded;
-        public event EventHandler RainChanged;
         private Data() {}
         public static Data GetInstance()
         {
@@ -29,17 +27,11 @@ namespace PiAOIS.Data
             set
             {
                 if (_points is null)
-                {
                     _points = new List<ChartPoint>[value.Length];
-                    for (int j = 0; j < value.Length; j++)
-                        _points[j] = new List<ChartPoint>();
-                }
-                else
-                    _points.ForEach(x => x.Clear());
                 lock (value.SyncRoot)
                 {
                     for (int j = 0; j < value.Length; j++)
-                        value[j].ForEach(x => _points[j].Add(x));
+                        _points[j] = new List<ChartPoint>(value[j]);
                 }
                 OnDataAdded(new EventArgs());
             }
@@ -50,24 +42,11 @@ namespace PiAOIS.Data
         public double TempThreshold { get; set; }
         public bool HeaterIsOn { get; set; }
         public bool WindIsHigh { get; set; }
-        public bool IsRaining 
-        { 
-            get => _isRaining; 
-            set
-            {
-                if (_isRaining != value)
-                    OnRainChanged(new EventArgs());
-                _isRaining = value;
-            }
-        }
+        public bool IsRaining { get; set; }
         protected virtual void OnDataAdded(EventArgs e)
         {
             EventHandler handler = DataAdded;
             handler?.Invoke(this, e);
-        }
-        protected virtual void OnRainChanged(EventArgs e)
-        {
-            RainChanged?.Invoke(this, e);
         }
     }
 }
