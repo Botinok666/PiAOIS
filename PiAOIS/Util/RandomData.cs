@@ -72,6 +72,7 @@ namespace PiAOIS.Util
                 new Cauchy(0.0, 1.5, random)
             };
             var means = new double[] { 0, 0, 1 / 1.5, 5, 0, 0 };
+            double avgDeviation = 1; //Random distributions may return rather large values, so we clip them
             CancellationToken cancellationToken = (CancellationToken)obj;
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -80,8 +81,10 @@ namespace PiAOIS.Util
                     for (int j = 0; j < sensors.Count; j++)
                     {
                         var x = sensors[j];
-                        x.Value += (x.UpperLimit - x.LowerLimit) * Const.changeRate * (distributions[j].Sample() - means[j]);
-                        x.Value = Math.Min(x.UpperLimit, Math.Max(x.LowerLimit, x.Value));
+                        var sample = distributions[j].Sample() - means[j];
+                        sample = Math.Min(avgDeviation, Math.Max(-avgDeviation, sample)); //Clipping of sample happens here
+                        x.Value += (x.UpperLimit - x.LowerLimit) * Const.changeRate * sample;
+                        x.Value = Math.Min(x.UpperLimit, Math.Max(x.LowerLimit, x.Value)); //And here we clip the final value
                     }
                 }
                 JsonObject jsonValues = new JsonObject();

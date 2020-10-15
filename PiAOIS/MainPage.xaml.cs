@@ -3,14 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
 using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
@@ -23,8 +21,6 @@ using Windows.Storage.Search;
 using System.Threading;
 using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -87,18 +83,11 @@ namespace PiAOIS
         {
             if (_isRunning == 0)
             {
-                Interlocked.Exchange(ref _isRunning, 1);
+                _isRunning = 1;
                 if (jsonFolder is null)
                 {
-                    await new Windows.UI.Popups.MessageDialog("Выберите папку для сохранения JSON файлов").ShowAsync();
-                    FolderPicker folderPicker = new FolderPicker();
-                    folderPicker.FileTypeFilter.Add("*");
-                    jsonFolder = await folderPicker.PickSingleFolderAsync();
-                    if (jsonFolder is null)
-                    {
-                        Interlocked.Exchange(ref _isRunning, 0);
-                        return;
-                    }
+                    StorageFolder storageFolder = ApplicationData.Current.LocalFolder;
+                    jsonFolder = await storageFolder.CreateFolderAsync("JSONs", CreationCollisionOption.ReplaceExisting);
                     randomData = new RandomData(jsonFolder);
                     var names = Enum.GetValues(typeof(GraphKeys)).OfType<GraphKeys>();
                     for (int j = 0; j < names.Count(); j++)
@@ -126,14 +115,14 @@ namespace PiAOIS
                         new QueryOptions(CommonFileQuery.DefaultQuery, new List<string>() { ".json" }));
                     queryResult.ContentsChanged += QueryResult_ContentsChanged;
                     var files = await queryResult.GetFilesAsync();
-                    files.ForEach(async x => 
-                    {
-                        try
-                        {
-                            await x.DeleteAsync();
-                        }
-                        catch (FileNotFoundException) { }
-                    });
+                    //files.ForEach(async x => 
+                    //{
+                    //    try
+                    //    {
+                    //        await x.DeleteAsync();
+                    //    }
+                    //    catch (FileNotFoundException) { }
+                    //});
                     sensors = new Sensors(queryResult);
                 }
                 randomData.Start();
@@ -145,6 +134,7 @@ namespace PiAOIS
                 randomData?.Stop();
                 DebugText.Text += Environment.NewLine + Const.systemOff;
                 TurnOnBtn.Foreground = new SolidColorBrush(Colors.Black);
+                _isRunning = 0;
             }
             DebugScroll.ChangeView(0, DebugScroll.ScrollableHeight, 1);
         }
@@ -252,6 +242,8 @@ namespace PiAOIS
         private void ApplyBtn_Click(object sender, RoutedEventArgs e)
         {
             var x = TempUserInput.Value;
+            if (double.IsNaN(x))
+                return;
             var min = Const.GetGraphs[(int)GraphKeys.tempInt].LowerBound;
             var max = Const.GetGraphs[(int)GraphKeys.tempInt].UpperBound;
             data.TempThreshold = Math.Min(max, Math.Max(x, min));
