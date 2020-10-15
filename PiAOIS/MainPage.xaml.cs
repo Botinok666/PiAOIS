@@ -246,9 +246,11 @@ namespace PiAOIS
                 return;
             var min = Const.GetGraphs[(int)GraphKeys.tempInt].LowerBound;
             var max = Const.GetGraphs[(int)GraphKeys.tempInt].UpperBound;
+            TempUserInput.Text = "";
+            if (data is null)
+                return;
             data.TempThreshold = Math.Min(max, Math.Max(x, min));
             TempUserInput.PlaceholderText = $"{(int)data.TempThreshold}°C";
-            TempUserInput.Text = "";
         }
     }
 }
