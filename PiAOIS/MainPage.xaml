@@ -5,20 +5,10 @@
     xmlns:local="using:PiAOIS"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     xmlns:Charting="using:WinRTXamlToolkit.Controls.DataVisualization.Charting"
-    xmlns:Controls="using:WinRTXamlToolkit.Controls"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
     <Page.Resources>
-        <Style TargetType="Border">
-            <Setter Property="BorderBrush" Value="DarkGray"/>
-            <Setter Property="BorderThickness" Value="2"/>
-            <Setter Property="Margin" Value="8"/>
-        </Style>
-        <Style TargetType="muxc:NumberBox">
-            <Setter Property="FontSize" Value="32"/>
-        </Style>
         <Style TargetType="Button">
             <Setter Property="FontSize" Value="20"/>
         </Style>
@@ -35,114 +25,42 @@
             <Setter Property="HorizontalAlignment" Value="Center"/>
         </Style>
     </Page.Resources>
-    
+
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="7*"/>
-            <ColumnDefinition Width="3*"/>
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="11*"/>
             <RowDefinition Height="7*"/>
-            <RowDefinition Height="3*"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="0">
-            <Pivot x:Name="TabCharts" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                <PivotItem Header="Температура">
-                    <Charting:Chart x:Name="ChartTemperature"/>
-                </PivotItem>
-                <PivotItem Header="Влажность">
-                    <Charting:Chart x:Name="ChartHumidity"/>
-                </PivotItem>
-                <PivotItem Header="Ветер">
-                    <Charting:Chart x:Name="ChartWind"/>
-                </PivotItem>
-            </Pivot>
-        </Border>
-        <Border Grid.Row="0" Grid.Column="1">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Outdoor" 
-                           HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                <StackPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="Temp" HorizontalAlignment="Center"/>
-                    <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run x:Name="OutsideTemp"/><Run FontSize="20" Text="°C"/>
-                    </TextBlock>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="Humidity" HorizontalAlignment="Center"/>
-                    <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run x:Name="OutsideHumidity"/><Run FontSize="20" Text="%"/>
-                    </TextBlock>
-                </StackPanel>
-                <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="Wind" HorizontalAlignment="Center"/>
-                    <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run x:Name="WindSpeed"/><Run FontSize="20" Text=" km/h"/>
-                    </TextBlock>
-                </StackPanel>
-                <StackPanel Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="Weather" HorizontalAlignment="Center"/>
-                    <Image x:Name="WeatherImg" Source="Assets/sun.png" Height="64"/>
-                </StackPanel>
-            </Grid>
-        </Border>
-        <Border Grid.Row="1" Grid.Column="1">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Text="Indoor" 
-                           HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                <StackPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="Temp" HorizontalAlignment="Center"/>
-                    <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run x:Name="InsideTemp"/><Run FontSize="20" Text="°C"/>
-                    </TextBlock>
-                </StackPanel>
-                <StackPanel Grid.Row="1" Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="Humidity" HorizontalAlignment="Center"/>
-                    <TextBlock Style="{StaticResource LargeTextBlockStyle}">
-                        <Run x:Name="InsideHumidity"/><Run FontSize="20" Text="%"/>
-                    </TextBlock>
-                </StackPanel>
-            </Grid>
-        </Border>
-        <Border Grid.Row="2" Grid.Column="0">
-            <ScrollViewer x:Name="DebugScroll" VerticalScrollMode="Auto" 
+        <Pivot x:Name="TabCharts" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <PivotItem Header="Power">
+                <Charting:Chart x:Name="ChartPower" BorderBrush="LightGreen" BorderThickness="2"/>
+            </PivotItem>
+            <PivotItem Header="Voltage">
+                <Charting:Chart x:Name="ChartVoltage" BorderBrush="LightPink" BorderThickness="2"/>
+            </PivotItem>
+            <PivotItem Header="Temperature">
+                <Charting:Chart x:Name="ChartTemperature" BorderBrush="LightSkyBlue" BorderThickness="2"/>
+            </PivotItem>
+        </Pivot>
+        <Grid Grid.Row="2" Grid.Column="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="4*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Orientation="Vertical" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <TextBlock Text="Remote server" HorizontalAlignment="Center"/>
+                <ToggleSwitch x:Name="TurnOnBtn" Toggled="TurnOnBtn_Click" HorizontalAlignment="Center"
+                              OnContent="Polling" OffContent="Idling"/>
+            </StackPanel>
+            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="LightCoral" BorderThickness="1"/>
+            <PasswordBox Grid.Column="1" x:Name="TempUserInput" PlaceholderText="DB password"
+                         HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+            <ScrollViewer Grid.Column="2" x:Name="DebugScroll" VerticalScrollMode="Auto" 
+                          BorderBrush="LightCoral" BorderThickness="1"
                           VerticalScrollBarVisibility="Visible" HorizontalScrollMode="Disabled">
                 <TextBlock x:Name="DebugText"/>
             </ScrollViewer>
-        </Border>
-        <Grid Grid.Row="2" Grid.Column="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="4*"/>
-                <ColumnDefinition Width="3*"/>
-                <ColumnDefinition Width="3*"/>
-            </Grid.ColumnDefinitions>
-            <Border Grid.Column="0">
-                <muxc:NumberBox x:Name="TempUserInput" PlaceholderText="25°С" TextAlignment="Center"
-                         BorderThickness="0" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
-            </Border>
-            <Button Grid.Column="1" Content="Apply" x:Name="ApplyBtn" Click="ApplyBtn_Click" Margin="8"
-                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-            <Button Grid.Column="2" Content="&#xe7e8;" FontFamily="{StaticResource SymbolThemeFontFamily}" 
-                    x:Name="TurnOnBtn" Click="TurnOnBtn_Click" Margin="8" FontSize="42"
-                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
         </Grid>
     </Grid>
 </Page>

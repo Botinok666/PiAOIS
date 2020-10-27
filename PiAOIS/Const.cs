@@ -12,34 +12,26 @@ namespace PiAOIS
     {
         public const int pointsCount = 16;
         public const int repeatRate = 2000; //In ms
-        public const double changeRate = .04;
-        public const double temperatureHyst = 1;
-        public const double windThreshold = 10;
-        public const double windSpeedHyst = 1.5;
-        public const double rainThreshold = .9;
-        public const double rainHyst = .05;
-        public const string systemOn = "– System has started";
-        public const string systemOff = "– System has stopped";
-        public const string heatingOn = "– Heating is ON";
-        public const string heatingOff = "– Heating is OFF";
-        public const string rainyDay = "– It's rainy today! You should take an umbrella";
-        public const string highWind = "– High wind, be careful!";
-        public struct Graphs
+        public const string remoteServer = "http://localhost:8086";
+        public const string remoteErr = "It looks like " + remoteServer + " isn't running";
+        public const string remoteStart = "Connecting to " + remoteServer + "…";
+        public const string remoteStop = "Polling " + remoteServer + " was stopped";
+        public const string remoteOk = "Connected to " + remoteServer;
+        public static readonly string[] units = new string[] { "W", "V", "°C" };
+        public static readonly SensorSelect[] selects = new SensorSelect[]
         {
-            public string Title;
-            public double DefaultValue;
-            public double LowerBound;
-            public double UpperBound;
-        }
-        public static readonly Graphs[] GetGraphs = new Graphs[]
-        {
-            new Graphs() { Title = "Улица\n°C", DefaultValue = 26.5, LowerBound = -40, UpperBound = 80 },
-            new Graphs() { Title = "Помещение\n°C", DefaultValue = 26.5, LowerBound = -5, UpperBound = 45 },
-            new Graphs() { Title = "Улица\n%", DefaultValue = 60, LowerBound = 0, UpperBound = 100 },
-            new Graphs() { Title = "Помещение\n%", DefaultValue = 60, LowerBound = 15, UpperBound = 85 },
-            new Graphs() { Title = "Ветер\nкм/ч", DefaultValue = 5, LowerBound = .3, UpperBound = 30 },
-            new Graphs() { Title = "Дождь", DefaultValue = .5, LowerBound = 0, UpperBound = 1 }
+            new SensorSelect() { Class = "CPU [#0]: Intel Xeon E5-1660 v4: Enhanced", Name = "CPU Package Power" },
+            new SensorSelect() { Class = "GPU [#0]: NVIDIA GeForce GTX 1070 Ti: ", Name = "GPU Power" },
+            new SensorSelect() { Class = "CPU [#0]: Intel Xeon E5-1660 v4", Name = "Core 0 VID" },
+            new SensorSelect() { Class = "GPU [#0]: NVIDIA GeForce GTX 1070 Ti: ", Name = "GPU Core Voltage" },
+            new SensorSelect() { Class = "CPU [#0]: Intel Xeon E5-1660 v4: DTS", Name = "CPU Package" },
+            new SensorSelect() { Class = "GPU [#0]: NVIDIA GeForce GTX 1070 Ti: ", Name = "GPU Temperature" }
         };
+    }
+    public struct SensorSelect
+    {
+        public string Class;
+        public string Name;
     }
 
 }
