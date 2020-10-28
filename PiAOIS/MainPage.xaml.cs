@@ -48,9 +48,9 @@ namespace PiAOIS
         }
         private void SetChartSeries(List<IEnumerable<RemoteSensors>> collection)
         {
-            var charts = new List<Chart>() { ChartPower, ChartVoltage, ChartTemperature };
             if (collection.Count < 1 || collection[0].Count() < 1)
                 return;
+            var charts = new List<Chart>() { ChartPower, ChartVoltage, ChartTemperature };
             collection
                 .GroupBy(x => x.First().SensorUnit)
                 .ForEach(x => 
@@ -78,7 +78,7 @@ namespace PiAOIS
                                     DateTime time = DateTimeOffset
                                         .FromUnixTimeSeconds(z.SensorUpdateTime)
                                         .LocalDateTime;
-                                    return new ChartPoint(time, double.Parse(z.SensorValue));
+                                    return new ChartPoint(time, z.Value);
                                 });
                             var series = charts[tab].Series
                                 .OfType<LineSeries>()
@@ -121,7 +121,13 @@ namespace PiAOIS
                 TurnOnBtn.Foreground = new SolidColorBrush(Colors.Orange);
                 DebugText.Text = Const.remoteErr;
             }
-            SetChartSeries((await Data.Data.GetInstance().GetPoints()).ToList());
+            var collection = (await Data.Data.GetInstance()
+                .GetPoints(DBPass.Password)
+                ).ToList();
+            if (collection.Count < 1 || collection[0].Count() < 1)
+                DebugText.Text = Const.incorrectPass;
+            else
+                SetChartSeries(collection);
         }
     }
 }

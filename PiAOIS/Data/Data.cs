@@ -17,15 +17,15 @@ namespace PiAOIS.Data
                 instance = new Data();
             return instance;
         }
-        public async Task<IEnumerable<RemoteSensors>[]> GetPoints()
+        public async Task<IEnumerable<RemoteSensors>[]> GetPoints(string pass)
         {
             return await Task.WhenAll(Const.selects
-                .Select(async x => await Model.GetSensorData(x, Const.pointsCount))
+                .Select(async x => await Model.GetSensorData(x, Const.pointsCount, pass))
                 .ToList());
         }
-        public void AddDataToDB(IEnumerable<RemoteSensors> sensors)
+        public async Task AddDataToDB(IEnumerable<RemoteSensors> sensors)
         {
-            Model.InsertRows(sensors);
+            await Model.InsertRows(sensors);
         }
     }
 }

@@ -8,7 +8,6 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Windows.Data.Json;
 using Windows.Storage;
 using Windows.Storage.Search;
 
@@ -46,7 +45,8 @@ namespace PiAOIS.Util
             {
                 return false;
             }
-            Data.Data.GetInstance().AddDataToDB(sensors);
+            await Data.Data.GetInstance()
+                .AddDataToDB(sensors);
             return true;
         }
     }

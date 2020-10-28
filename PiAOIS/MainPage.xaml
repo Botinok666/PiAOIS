@@ -15,6 +15,60 @@
         <Style TargetType="Charting:Chart">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="Palette">
+                <Setter.Value>
+                    <Charting:ResourceDictionaryCollection>
+                        <ResourceDictionary>
+                            <SolidColorBrush x:Key="Background" Color="DarkOrange" />
+                            <Style x:Key="DataPointStyle" TargetType="Control">
+                                <Setter Property="Background" Value="{StaticResource Background}" />
+                            </Style>
+                            <Style x:Key="DataShapeStyle" TargetType="Shape">
+                                <Setter Property="Stroke" Value="{StaticResource Background}" />
+                                <Setter Property="StrokeThickness" Value="2" />
+                                <Setter Property="StrokeMiterLimit" Value="1" />
+                                <Setter Property="Fill" Value="{StaticResource Background}" />
+                            </Style>
+                        </ResourceDictionary>
+                        <ResourceDictionary>
+                            <SolidColorBrush x:Key="Background" Color="ForestGreen" />
+                            <Style x:Key="DataPointStyle" TargetType="Control">
+                                <Setter Property="Background" Value="{StaticResource Background}" />
+                            </Style>
+                            <Style x:Key="DataShapeStyle" TargetType="Shape">
+                                <Setter Property="Stroke" Value="{StaticResource Background}" />
+                                <Setter Property="StrokeThickness" Value="2" />
+                                <Setter Property="StrokeMiterLimit" Value="1" />
+                                <Setter Property="Fill" Value="{StaticResource Background}" />
+                            </Style>
+                        </ResourceDictionary>
+                        <ResourceDictionary>
+                            <SolidColorBrush x:Key="Background" Color="IndianRed" />
+                            <Style x:Key="DataPointStyle" TargetType="Control">
+                                <Setter Property="Background" Value="{StaticResource Background}" />
+                            </Style>
+                            <Style x:Key="DataShapeStyle" TargetType="Shape">
+                                <Setter Property="Stroke" Value="{StaticResource Background}" />
+                                <Setter Property="StrokeThickness" Value="2" />
+                                <Setter Property="StrokeMiterLimit" Value="1" />
+                                <Setter Property="Fill" Value="{StaticResource Background}" />
+                            </Style>
+                        </ResourceDictionary>
+                        <ResourceDictionary>
+                            <SolidColorBrush x:Key="Background" Color="SteelBlue" />
+                            <Style x:Key="DataPointStyle" TargetType="Control">
+                                <Setter Property="Background" Value="{StaticResource Background}" />
+                            </Style>
+                            <Style x:Key="DataShapeStyle" TargetType="Shape">
+                                <Setter Property="Stroke" Value="{StaticResource Background}" />
+                                <Setter Property="StrokeThickness" Value="2" />
+                                <Setter Property="StrokeMiterLimit" Value="1" />
+                                <Setter Property="Fill" Value="{StaticResource Background}" />
+                            </Style>
+                        </ResourceDictionary>
+                    </Charting:ResourceDictionaryCollection>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style TargetType="TextBlock">
             <Setter Property="FontSize" Value="20"/>
@@ -36,7 +90,7 @@
                 <Charting:Chart x:Name="ChartPower" BorderBrush="LightGreen" BorderThickness="2"/>
             </PivotItem>
             <PivotItem Header="Voltage">
-                <Charting:Chart x:Name="ChartVoltage" BorderBrush="LightPink" BorderThickness="2"/>
+                <Charting:Chart x:Name="ChartVoltage" BorderBrush="LightCoral" BorderThickness="2"/>
             </PivotItem>
             <PivotItem Header="Temperature">
                 <Charting:Chart x:Name="ChartTemperature" BorderBrush="LightSkyBlue" BorderThickness="2"/>
@@ -53,11 +107,9 @@
                 <ToggleSwitch x:Name="TurnOnBtn" Toggled="TurnOnBtn_Click" HorizontalAlignment="Center"
                               OnContent="Polling" OffContent="Idling"/>
             </StackPanel>
-            <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" BorderBrush="LightCoral" BorderThickness="1"/>
-            <PasswordBox Grid.Column="1" x:Name="TempUserInput" PlaceholderText="DB password"
+            <PasswordBox Grid.Column="1" x:Name="DBPass" PlaceholderText="DB password"
                          HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
             <ScrollViewer Grid.Column="2" x:Name="DebugScroll" VerticalScrollMode="Auto" 
-                          BorderBrush="LightCoral" BorderThickness="1"
                           VerticalScrollBarVisibility="Visible" HorizontalScrollMode="Disabled">
                 <TextBlock x:Name="DebugText"/>
             </ScrollViewer>

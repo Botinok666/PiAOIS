@@ -11,6 +11,7 @@ using Microsoft.Data.Sqlite;
 using System.Runtime.InteropServices;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
+using PiAOIS.Util;
 
 namespace PiAOIS
 {
@@ -45,7 +46,7 @@ namespace PiAOIS
                 await new SqliteCommand(tableCommand, db).ExecuteNonQueryAsync();
             }
         }
-        public static async void InsertRows(IEnumerable<RemoteSensors> sensors)
+        public static async Task InsertRows(IEnumerable<RemoteSensors> sensors)
         {                
             var classes = sensors
                 .Select(x => x.SensorClass)
@@ -74,20 +75,22 @@ namespace PiAOIS
                     new SqliteParameter("@UpdateTime", DbType.Int32)
                 };
                 command.Parameters.AddRange(parameters);
-                sensors
+                await Task.WhenAll(sensors
                     .ToList()
-                    .ForEach(async x => 
+                    .Select(async x => 
                     {
                         parameters[0].Value = classIDs[x.SensorClass];
                         parameters[1].Value = x.SensorName;
-                        parameters[2].Value = x.SensorValue;
+                        parameters[2].Value = Crypto.Encrypt(x.SensorValue);
                         parameters[3].Value = unitsIDs[x.SensorUnit];
                         parameters[4].Value = x.SensorUpdateTime;
                         await command.ExecuteNonQueryAsync();
-                    });
+                    })
+                );
             }
         }
-        public static async Task<IEnumerable<RemoteSensors>> GetSensorData(SensorSelect key, int count)
+        public static async Task<IEnumerable<RemoteSensors>> GetSensorData
+            (SensorSelect key, int count, string pass)
         {
             if (classIDs.Count == 0 || 0 == unitsIDs.Count)
                 return new List<RemoteSensors>();
@@ -104,18 +107,21 @@ namespace PiAOIS
                 using (var reader = await adapter.ExecuteReaderAsync())
                 {
                     List<RemoteSensors> sensors = new List<RemoteSensors>();
+                    bool validPass = true;
                     while (await reader.ReadAsync())
                     {
+                        string encrypted = await reader.GetFieldValueAsync<string>(3);
+                        validPass &= Crypto.TryDecryptFloat(pass, encrypted, out float value);
                         sensors.Add(new RemoteSensors()
                         {
                             SensorClass = await reader.GetFieldValueAsync<string>(0),
                             SensorUnit = await reader.GetFieldValueAsync<string>(1),
                             SensorName = await reader.GetFieldValueAsync<string>(2),
-                            SensorValue = await reader.GetFieldValueAsync<string>(3),
-                            SensorUpdateTime = await reader.GetFieldValueAsync<int>(4),
+                            Value = value,
+                            SensorUpdateTime = reader.GetInt32(4)
                         });
                     }
-                    return sensors;
+                    return validPass ? sensors : new List<RemoteSensors>();
                 }
             }
         }
@@ -131,10 +137,7 @@ namespace PiAOIS
                 using (var reader = await adapter.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
-                    {
-                        dbNames.Add(new KeyValuePair<string, int>(
-                            await reader.GetFieldValueAsync<string>(1), await reader.GetFieldValueAsync<int>(0)));
-                    }
+                        dbNames.Add(new KeyValuePair<string, int>(reader.GetString(1), reader.GetInt32(0)));
                     var newNames = names
                         .Except(dbNames.Select(x => x.Key));
                     if (newNames.Count() > 0)
@@ -159,10 +162,7 @@ namespace PiAOIS
                     using (var reader = await adapter.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
-                        {
-                            dbNames.Add(new KeyValuePair<string, int>(
-                                await reader.GetFieldValueAsync<string>(1), await reader.GetFieldValueAsync<int>(0)));
-                        }
+                            dbNames.Add(new KeyValuePair<string, int>(reader.GetString(1), reader.GetInt32(0)));
                     }
                 }
                 return dbNames.ToDictionary(x => x.Key, x => x.Value);

@@ -16,5 +16,7 @@ namespace PiAOIS.Data
         public string SensorValue { get; set; }
         public string SensorUnit { get; set; }
         public long SensorUpdateTime { get; set; }
+        [JsonIgnore]
+        public float Value { get; set; }
     }
 }
