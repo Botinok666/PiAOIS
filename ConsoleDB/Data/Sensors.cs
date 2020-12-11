@@ -5,9 +5,9 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace PiAOIS.Data
+namespace ConsoleDB.Data
 {
-    public class RemoteSensors
+    public class Sensors
     {
         [JsonIgnore]
         public string SensorApp { get; set; }

@@ -119,16 +119,13 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Const.cs" />
-    <Compile Include="Data\Data.cs" />
-    <Compile Include="Data\Model.cs" />
-    <Compile Include="Data\RemoteSensors.cs" />
+    <Compile Include="Data\MeasurementModel.cs" />
+    <Compile Include="Data\SensorModel.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Util\Crypto.cs" />
-    <Compile Include="Util\Sensors.cs" />
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -164,6 +161,9 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
       <Version>6.2.10</Version>
+    </PackageReference>
+    <PackageReference Include="MongoDB.Driver">
+      <Version>2.12.0-beta1</Version>
     </PackageReference>
     <PackageReference Include="System.Text.Json">
       <Version>5.0.0-rc.2.20475.5</Version>

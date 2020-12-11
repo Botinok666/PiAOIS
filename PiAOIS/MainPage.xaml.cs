@@ -1,12 +1,9 @@
-﻿using PiAOIS.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
-using Windows.Storage;
-using Windows.Storage.Pickers;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Data;
@@ -14,14 +11,13 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using WinRTXamlToolkit.Controls.DataVisualization;
-using WinRTXamlToolkit.Tools;
 using WinRTXamlToolkit.Controls.DataVisualization.Charting;
-using System.Collections.ObjectModel;
-using Windows.Storage.Search;
-using System.Threading;
-using Windows.UI.Xaml.Media.Imaging;
 using Windows.UI;
+using MongoDB.Driver;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using PiAOIS.Data;
+using PiAOIS.Util;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -34,100 +30,139 @@ namespace PiAOIS
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        private Sensors sensors = null;
         private readonly DispatcherTimer dispatcher;
+        private readonly string[] powerSelects = new string[]
+        {
+            "CPU Package Power",
+            "GPU Power"
+        };
+        private readonly string[] tempSelects = new string[]
+        {
+            "Core Max",
+            "GPU Temperature"
+        };
+        private const string dbServer = "mongodb://localhost:27017";
+        private readonly IMongoDatabase mongoDatabase;
         public MainPage()
         {
             InitializeComponent();
-            Model.InitializeDatabase();
+            //Mongo driver setup
+            BsonClassMap.RegisterClassMap<SensorModel>();
+            BsonClassMap.RegisterClassMap<MeasurementModel>();
+            var mongoClient = new MongoClient(dbServer);
+            mongoDatabase = mongoClient.GetDatabase("machines");
             dispatcher = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(Const.repeatRate)
+                Interval = TimeSpan.FromMilliseconds(2000)
             };
             dispatcher.Tick += Dispatcher_Tick;
+            //Init axes
+            ChartTemperature.Axes.Add(new LinearAxis() 
+            { 
+                Title = new Title() { Content = "°C" },
+                Orientation = AxisOrientation.Y,
+                ShowGridLines = true
+            });
+            ChartPower.Axes.Add(new LinearAxis() 
+            { 
+                Title = new Title() { Content = "W" },
+                Orientation = AxisOrientation.Y,
+                ShowGridLines = true
+            });
+            ChartTemperature.Axes.Add(new DateTimeAxis()
+            {
+                Orientation = AxisOrientation.X
+            });
+            ChartPower.Axes.Add(new DateTimeAxis()
+            {
+                Orientation = AxisOrientation.X
+            });
         }
-        private void SetChartSeries(List<IEnumerable<RemoteSensors>> collection)
+        private void SetChartPoints(Chart chart, List<MeasurementModel> collection, string[] selects)
         {
-            if (collection.Count < 1 || collection[0].Count() < 1)
+            if (collection.Count < 1)
                 return;
-            var charts = new List<Chart>() { ChartPower, ChartVoltage, ChartTemperature };
             collection
-                .GroupBy(x => x.First().SensorUnit)
-                .ForEach(x => 
+                .SelectMany(x => x.Sensors, (meas, sens) => new { meas, sens })
+                .Where(x => selects.Contains(x.sens.Name))
+                .GroupBy(x => x.sens.Group)
+                .ToList()
+                .ForEach(x =>
                 {
-                    int tab = TabCharts.SelectedIndex;
-                    if (x.Key.Contains(Const.units[tab], StringComparison.OrdinalIgnoreCase))
+                    var chartSeries = chart
+                        .Series
+                        .OfType<LineSeries>()
+                        .Where(y => (y.Title as Title).Content.Equals(x.Key))
+                        .FirstOrDefault();
+                    if (chartSeries is null)
                     {
-                        if (charts[tab].Series.Count == 0)
+                        chartSeries = new LineSeries()
                         {
-                            x.ForEach(y => charts[tab].Series.Add(new LineSeries()
-                            {
-                                ItemsSource = new ChartCollection(),
-                                Title = new Title() { Content = y.First().SensorName + ", " + x.Key },
-                                IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
-                                DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
-                                IsSelectionEnabled = true
-                            }));
-                        }
-                        x.ForEach(y =>
-                        {
-                            string title = y.First().SensorName + ", " + x.Key;
-                            var points = y
-                                .Select(z =>
-                                {
-                                    DateTime time = DateTimeOffset
-                                        .FromUnixTimeSeconds(z.SensorUpdateTime)
-                                        .LocalDateTime;
-                                    return new ChartPoint(time, z.Value);
-                                });
-                            var series = charts[tab].Series
-                                .OfType<LineSeries>()
-                                .Where(z => (z.Title as Title).Content.Equals(title))
-                                .FirstOrDefault();
-                            if (!(series is null))
-                                series.ItemsSource = new ChartCollection(points);
-                        });
+                            ItemsSource = new ChartCollection(),
+                            Title = new Title() { Content = x.Key },
+                            IndependentValueBinding = new Binding() { Path = new PropertyPath("Item1") },
+                            DependentValueBinding = new Binding() { Path = new PropertyPath("Item2") },
+                            IsSelectionEnabled = true
+                        };
+                        chart.Series.Add(chartSeries);
                     }
+                    chartSeries.ItemsSource = new ChartCollection(x
+                        .Select(y => new ChartPoint(
+                            TimeZoneInfo.ConvertTimeFromUtc(y.meas.Time, TimeZoneInfo.Local), 
+                            y.sens.NumericValue)
+                        )
+                    );
                 });
         }
         private void TurnOnBtn_Click(object _0, RoutedEventArgs _1)
         {
             if (TurnOnBtn.IsOn)
             {
-                if (sensors is null)
-                    sensors = new Sensors();
                 dispatcher.Start();
                 TurnOnBtn.Foreground = new SolidColorBrush(Colors.Orange);
-                DebugText.Text = Const.remoteStart;
             }
             else
             {
                 dispatcher.Stop();
                 TurnOnBtn.Foreground = new SolidColorBrush(Colors.Black);
-                DebugText.Text = Const.remoteStop;
             }
         }
         private async void Dispatcher_Tick(object sender, object e)
         {
-            if (!TurnOnBtn.IsOn)
-                return;
-            if (await sensors?.PollSensors())
+            var collection = await mongoDatabase
+                .GetCollection<MeasurementModel>("measurements")
+                .Find(new BsonDocument())
+                .SortByDescending(x => x.Time)
+                .Limit(15)
+                .ToListAsync();
+            collection
+                .SelectMany(x => x.Sensors)
+                .ToList()
+                .ForEach(x => x.NumericValue = Crypto.Decrypt(x.Value));
+            if (collection
+                .SelectMany(x => x.Sensors)
+                .Any(x => double.IsNaN(x.NumericValue)))
             {
-                TurnOnBtn.Foreground = new SolidColorBrush(Colors.ForestGreen);
-                DebugText.Text = Const.remoteOk;
-            }
-            else
-            {
+                dispatcher.Stop();
                 TurnOnBtn.Foreground = new SolidColorBrush(Colors.Orange);
-                DebugText.Text = Const.remoteErr;
+                //Ask user to provide password
+                var dialogResult = await PasswordDialog.ShowAsync();
+                if (dialogResult == ContentDialogResult.Primary)
+                {
+                    Crypto.SetPassword(userPassword.Password);
+                    dispatcher.Start();
+                }
+                else
+                {
+                    TurnOnBtn.IsOn = false;
+                    TurnOnBtn.Foreground = new SolidColorBrush(Colors.Black);
+                }
+                return;
             }
-            var collection = (await Data.Data.GetInstance()
-                .GetPoints(DBPass.Password)
-                ).ToList();
-            if (collection.Count < 1 || collection[0].Count() < 1)
-                DebugText.Text = Const.incorrectPass;
-            else
-                SetChartSeries(collection);
+            if (TabCharts.SelectedIndex == 0)
+                SetChartPoints(ChartTemperature, collection, tempSelects);
+            else if (TabCharts.SelectedIndex == 1)
+                SetChartPoints(ChartPower, collection, powerSelects);
         }
     }
 }

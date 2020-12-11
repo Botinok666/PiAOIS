@@ -3,62 +3,39 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PiAOIS.Util
 {
     public static class Crypto
     {
-        private const int padding = 16;
-        private const int _iterations = 2;
-        private static readonly Random random = new Random();
-        private static readonly string _pass = "milwakee";
-        private static readonly string _hash = "SHA256";
-        private static readonly byte[] _iv = Encoding.ASCII.GetBytes("aselrias38490a32");
-        private static readonly byte[] _salt = Encoding.ASCII.GetBytes("8947az34awl34kjq");
-        public static string Encrypt(string value)
+        private const int _iterations = 6666;
+        private static readonly AesCng _aes = new AesCng() { Mode = CipherMode.CBC };
+        private static readonly byte[] _salt = Convert.FromBase64String("vOVH6sdmpNWjRRIqCc7rdxs01lwHzfr3");
+        public static void SetPassword(string password)
         {
-            int spaces = value.Length % padding; //How much spaces do we need to pad
-            int padLeftWidth = spaces - random.Next(spaces) + value.Length;
-            int padRightWidth = spaces + value.Length;
-            value = value
-                .PadLeft(padLeftWidth)
-                .PadRight(padRightWidth);
-            byte[] valueBytes = Encoding.Unicode.GetBytes(value);
-            using (var cipher = new AesCng())
-            {
-                PasswordDeriveBytes _passwordBytes =
-                    new PasswordDeriveBytes(_pass, _salt, _hash, _iterations);
-                cipher.Mode = CipherMode.CBC;
-                cipher.IV = _iv;
-                cipher.Key = _passwordBytes.GetBytes(cipher.KeySize / 8);
-                var encryptor = cipher.CreateEncryptor();
-                return Convert.ToBase64String(encryptor.TransformFinalBlock(valueBytes, 0, valueBytes.Length));
-            }
+            _aes.Key = new Rfc2898DeriveBytes(password, _salt, _iterations, HashAlgorithmName.SHA256)
+                .GetBytes(_aes.KeySize / 8);
         }
-
-        public static bool TryDecryptFloat(string password, string value, out float result)
-        { 
-            byte[] valueBytes = Convert.FromBase64String(value);
-            using (var cipher = new AesCng())
+        public static double Decrypt(string cipher)
+        {
+            var vs = cipher.Split(':');
+            //Incoming value contains both IV and cipher
+            if (vs.Length != 2)
+                return double.NaN;
+            try
             {
-                PasswordDeriveBytes _passwordBytes = 
-                    new PasswordDeriveBytes(password, _salt, _hash, _iterations);
-                cipher.Mode = CipherMode.CBC;
-                cipher.IV = _iv;
-                cipher.Key = _passwordBytes.GetBytes(cipher.KeySize / 8);
-                try
-                {
-                    var decryptor = cipher.CreateDecryptor();
-                    string vs = Encoding.Unicode.GetString
-                        (decryptor.TransformFinalBlock(valueBytes, 0, valueBytes.Length));
-                    return float.TryParse(vs, out result);
-                }
-                catch (Exception)
-                {
-                    result = 0;
-                    return false;
-                }
+                _aes.IV = Convert.FromBase64String(vs[0]);
+                var value = Convert.FromBase64String(vs[1]);
+                var decryptor = _aes.CreateDecryptor();
+                string vx = Encoding.Unicode.GetString
+                    (decryptor.TransformFinalBlock(value, 0, value.Length));
+                if (!double.TryParse(vx, out double result))
+                    return double.NaN;
+                return result;
+            }
+            catch (Exception)
+            {
+                return double.NaN;
             }
         }
     }
