@@ -17,6 +17,7 @@ namespace ConsoleDB
         private static IMongoDatabase mongoDatabase;
         private const string remoteServer = "http://localhost:8086";
         private const string dbServer = "mongodb://localhost:27017";
+        //Названия полей, по которым будут отбираться метрики
         private static readonly string[] selects = new string[]
         {
             "CPU Package Power",
@@ -29,13 +30,14 @@ namespace ConsoleDB
             Console.WriteLine("Hello World! Press Esc to exit");
             client = new HttpClient();
             Crypto.Init();
-            //Mongo driver setup
+            //Инициализация драйвера Mongo
             BsonClassMap.RegisterClassMap<SensorModel>();
             BsonClassMap.RegisterClassMap<MeasurementModel>();
             var mongoClient = new MongoClient(dbServer);
             mongoDatabase = mongoClient.GetDatabase("machines");
-            //Start timer
+            //Запустим таймер, который будет вызывать метод callback каждые 2 сек.
             var t = new Timer(Callback, null, 0, 2000);
+            //Ждём, пока пользователь не нажмёт на Esc
             while (true)
             {
                 if (Console.ReadKey().Key == ConsoleKey.Escape)
@@ -44,25 +46,30 @@ namespace ConsoleDB
         }
         private async static void Callback(object o)
         {
-            //Fetch data from HWInfo
+            //Получим данные от расширения HWiNFO - оно выдаёт json по запросу главной страницы
             var response = await client?.GetAsync(remoteServer);
             if (response is null || !response.IsSuccessStatusCode)
                 return;
+            //Сначала преобразуем текст в объект
             var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
             if (doc.RootElement.GetArrayLength() < 1)
                 return;
-            //Deserialize and filter measurements
+            //Полученный json содержит массив как корневой элемент. Представим его в виде массива,
+            //затем преобразуем элементы в тип Sensors, и выберем из них те, в которых поле
+            //SensorName совпадает с одним из заданных в массиве selects
             var sensors = doc
                 .RootElement
                 .EnumerateArray()
                 .Select(x => JsonSerializer.Deserialize<Sensors>(x.GetRawText()))
                 .Where(x => selects.Contains(x.SensorName))
                 .ToList();
-            //Trim excessive data from sensor classes
+            //Вырежем полезную часть названия метрики - HWiNFO выдаёт названия, в которых три поля,
+            //разделённых двоеточиями, нам нужно второе поле
             sensors
                 .ForEach(x => x.SensorClass = 
                     x.SensorClass[(x.SensorClass.IndexOf(':') + 2)..x.SensorClass.LastIndexOf(':')]);
-            //Create DB object
+            //Создадим объект, представляющий запись в БД
+            //Все метрики входят в него как массив, поле со значением шифруется
             var measurement = new MeasurementModel()
             {
                 Time = DateTime.Now,
@@ -75,6 +82,7 @@ namespace ConsoleDB
                     })
                     .ToArray()
             };
+            //Запишем объект в БД
             await mongoDatabase
                 .GetCollection<MeasurementModel>("measurements")
                 .InsertOneAsync(measurement);

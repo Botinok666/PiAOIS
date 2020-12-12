@@ -78,10 +78,22 @@ namespace PiAOIS
                 Orientation = AxisOrientation.X
             });
         }
+        /// <summary>
+        /// Задаёт для указанной диаграммы массивы точек
+        /// </summary>
+        /// <param name="chart">Диаграмма, в которой будут отображаться точки</param>
+        /// <param name="collection">Набор метрик, полученных из БД</param>
+        /// <param name="selects">Набор названий, по которым отбираются метрики для данной диаграммы</param>
         private void SetChartPoints(Chart chart, List<MeasurementModel> collection, string[] selects)
         {
             if (collection.Count < 1)
                 return;
+            //Сначала перегруппируем список измерений из иерархии в плоский вид. Для этого преобразуем
+            //массивы значений метрик в плоский вид, и сразу же создадим анонимный класс, в котором
+            //будет пара значений "измерение метрика". Так можно будет узнать, к какому измерению какая
+            //метрика относится. Затем выберем только нужные нам метрики, указанные в списке selects.
+            //Потом метрики нужно сгруппировать по полю Group, тогда получается список вида "ключ массив",
+            //в котором ключ - название метрики, а массив содержит объекты анонимного класса
             collection
                 .SelectMany(x => x.Sensors, (meas, sens) => new { meas, sens })
                 .Where(x => selects.Contains(x.sens.Name))
@@ -89,6 +101,7 @@ namespace PiAOIS
                 .ToList()
                 .ForEach(x =>
                 {
+                    //Найдём набор точек, соответствующий названию метрики из лямбды
                     var chartSeries = chart
                         .Series
                         .OfType<LineSeries>()
@@ -96,6 +109,7 @@ namespace PiAOIS
                         .FirstOrDefault();
                     if (chartSeries is null)
                     {
+                        //Сюда программа зайдёт только один раз после запуска, т.к. набора точек ещё нет
                         chartSeries = new LineSeries()
                         {
                             ItemsSource = new ChartCollection(),
@@ -106,6 +120,8 @@ namespace PiAOIS
                         };
                         chart.Series.Add(chartSeries);
                     }
+                    //Преобразуем массив объектов анонимного класса в массив точек
+                    //Для этого выберем из него время измерения и численное значение метрики
                     chartSeries.ItemsSource = new ChartCollection(x
                         .Select(y => new ChartPoint(
                             TimeZoneInfo.ConvertTimeFromUtc(y.meas.Time, TimeZoneInfo.Local), 
@@ -129,23 +145,29 @@ namespace PiAOIS
         }
         private async void Dispatcher_Tick(object sender, object e)
         {
+            //Выберем из таблицы БД 15 элементов без фильтра, но отсортированные по времени
             var collection = await mongoDatabase
                 .GetCollection<MeasurementModel>("measurements")
                 .Find(new BsonDocument())
                 .SortByDescending(x => x.Time)
                 .Limit(15)
                 .ToListAsync();
+            //Дешифруем все значения, и запишем что получилось в отдельное поле класса
+            //Если в результате дешифрации получается не число, значит, представленный пароль 
+            //неверный, и метод Decrypt возвращает NaN
             collection
                 .SelectMany(x => x.Sensors)
                 .ToList()
                 .ForEach(x => x.NumericValue = Crypto.Decrypt(x.Value));
+            //Проверим, удалось ли дешифровать. Если хотя бы один NaN есть, значит, не удалось
             if (collection
                 .SelectMany(x => x.Sensors)
                 .Any(x => double.IsNaN(x.NumericValue)))
             {
+                //В таком случае прекратим запрашивать данные из БД
+                //и запросим у пользователя пароль
                 dispatcher.Stop();
                 TurnOnBtn.Foreground = new SolidColorBrush(Colors.Orange);
-                //Ask user to provide password
                 var dialogResult = await PasswordDialog.ShowAsync();
                 if (dialogResult == ContentDialogResult.Primary)
                 {
@@ -157,8 +179,9 @@ namespace PiAOIS
                     TurnOnBtn.IsOn = false;
                     TurnOnBtn.Foreground = new SolidColorBrush(Colors.Black);
                 }
-                return;
+                return; //Выходим, данных для отображения всё равно нет
             }
+            //Если попали сюда, данные для отображения есть, выведем их на активную диаграмму
             if (TabCharts.SelectedIndex == 0)
                 SetChartPoints(ChartTemperature, collection, tempSelects);
             else if (TabCharts.SelectedIndex == 1)
